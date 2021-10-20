@@ -81,9 +81,9 @@ namespace NickCustomMusicMod.Management
 			Dictionary<string, MusicItem> musicItemDict = new Dictionary<string, MusicItem>();
 
 			foreach (string text in from x in Directory.GetFiles(path)
-				where x.ToLower().EndsWith(".ogg") || x.ToLower().EndsWith(".wav") || x.ToLower().EndsWith(".mp3")
-				select x)
-				{
+									where x.ToLower().EndsWith(".ogg") || x.ToLower().EndsWith(".wav") || x.ToLower().EndsWith(".mp3")
+									select x)
+			{
 				string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(text);
 
 				Plugin.LogInfo($"Found custom song: {parentFolderName}\\{folderName}\\{Path.GetFileName(text)}");
@@ -96,12 +96,43 @@ namespace NickCustomMusicMod.Management
 				};
 
 				if(musicItemDict.ContainsKey(music.id))
-                {
+				{
 					Plugin.LogWarning($"Ignoring \"{text}\" because duplicate file was detected! Do you have two different files with the same name in this folder?");
 					continue;
-                }
+				}
 
 				musicItemDict.Add(music.id, music);
+			}
+
+			if (File.Exists(Path.Combine(path, "shared.txt")))
+            {
+				Plugin.LogDebug($"Found shared file {Path.Combine(folderName, "shared.txt")}");
+
+				var lines = File.ReadAllLines(Path.Combine(path, "shared.txt"));
+
+				foreach (var line in lines)
+				{
+					var filePath = Path.Combine(rootCustomSongsPath, parentFolderName, "Shared", line);
+
+					if (File.Exists(filePath))
+					{
+						var music = new MusicItem
+						{
+							id = "CUSTOM_SHARED_" + Path.GetFileNameWithoutExtension(filePath),
+							originalName = Path.GetFileNameWithoutExtension(filePath),
+							resLocation = filePath
+						};
+
+						if (musicItemDict.ContainsKey(music.id))
+						{
+							Plugin.LogWarning($"Ignoring \"{filePath}\" because duplicate file was detected! Do you have any duplicates in this file?");
+							continue;
+						}
+
+						Plugin.LogDebug($"Added shared custom song: {Path.Combine(parentFolderName, folderName, Path.GetFileName(filePath))}");
+						musicItemDict.Add(music.id, music);
+					}
+				}
 			}
 
 			string prefix;
